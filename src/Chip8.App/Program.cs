@@ -4,7 +4,7 @@ using Chip8.App;
 using Silk.NET.SDL;
 using SystemThread = System.Threading.Thread;
 
-var state = StateExtensions.InitState(args);
+var state = State.InitState(args);
 
 if (state.Error.HasFlagFast(StateError.SdlInit))
     Console.WriteLine("Failed to initialize SDL.");
@@ -34,6 +34,10 @@ static unsafe void MainLoop(Chip8State state)
     var frameTimer = Stopwatch.StartNew();
     var ticksPer60Hz = (int)(Stopwatch.Frequency * 0.016);
 
+    const uint quit = (uint)EventType.Quit;
+    const uint keyDown = (uint)EventType.Keydown;
+    const uint keyUp = (uint)EventType.Keyup;
+
     while (true)
     {
         try
@@ -48,9 +52,9 @@ static unsafe void MainLoop(Chip8State state)
                 {
                     switch (sdlEvent.Type)
                     {
-                        case (uint)EventType.Quit:
+                        case quit:
                             goto quit;
-                        case (uint)EventType.Keydown:
+                        case keyDown:
                         {
                             var key = KeyCodeToKey(sdlEvent.Key.Keysym.Sym);
                             state.Chip8.Keyboard |= (ushort)(1 << key);
@@ -59,7 +63,7 @@ static unsafe void MainLoop(Chip8State state)
                                 Cpu.KeyPressed(state.Chip8, (byte)key);
                             break;
                         }
-                        case (uint)EventType.Keyup:
+                        case keyUp:
                         {
                             var key = KeyCodeToKey(sdlEvent.Key.Keysym.Sym);
                             state.Chip8.Keyboard &= (ushort)~(1 << key);
