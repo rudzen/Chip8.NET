@@ -170,7 +170,6 @@ public static class State
 
         if (state.AudioDevice == 0)
         {
-            Console.WriteLine("SDL could not open an audio device.");
             state.Error |= StateError.AudioInit;
             return;
         }
