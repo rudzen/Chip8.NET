@@ -58,7 +58,7 @@ public sealed class Chip8State
     public static Chip8State State => new();
 }
 
-public static class StateExtensions
+public static class State
 {
     public static unsafe Chip8State InitState(string[] args)
     {

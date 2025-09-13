@@ -32,22 +32,21 @@ public static class Draw
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void DrawSprites(Chip8 chip8, int x, int y, int n)
+    public static bool DrawSprites(Chip8 chip8, int x, int y, int n)
     {
-        // clear last buba
-        chip8.V[^1] = 0;
-
         if (Avx2.IsSupported && x <= 56)
-            DrawSpritesAvx2(chip8, x, y, n);
-        else if (Sse2.IsSupported && x <= 60)
-            DrawSpritesSse2(chip8, x, y, n);
-        else
-            DrawSpritesInternal(chip8, x, y, n);
+            return DrawSpritesAvx2(chip8, x, y, n);
+
+        if (Sse2.IsSupported && x <= 60)
+            return DrawSpritesSse2(chip8, x, y, n);
+
+        return DrawSpritesInternal(chip8, x, y, n);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void DrawSpritesInternal(Chip8 chip8, int x, int y, int n)
+    private static bool DrawSpritesInternal(Chip8 chip8, int x, int y, int n)
     {
+        var setLastV = false;
         var gfx = chip8.Gfx.AsSpan();
         var memory = chip8.Memory.AsSpan();
 
@@ -69,15 +68,19 @@ public static class Draw
                 if (pixel == 0)
                     continue;
 
-                if (gfx[index] != 0) chip8.V[15] = 1;
+                setLastV |= gfx[index] > 0U;
                 gfx[index] ^= 0xffffffff;
             }
         }
+
+        return setLastV;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static unsafe void DrawSpritesAvx2(Chip8 chip8, int x, int y, int n)
+    private static unsafe bool DrawSpritesAvx2(Chip8 chip8, int x, int y, int n)
     {
+        var setLastV = false;
+
         fixed (uint* gfxPtr = chip8.Gfx)
         fixed (byte* memPtr = chip8.Memory)
         {
@@ -111,18 +114,21 @@ public static class Draw
                 var right = Avx2.CompareEqual(pixels, Vector256<uint>.Zero);
                 var collision = Avx2.AndNot(left, right);
 
-                if (!Avx.TestZ(collision, collision))
-                    chip8.V[15] = 1;
+                setLastV |= !Avx.TestZ(collision, collision);
 
                 var result = Avx2.Xor(existing, pixels);
                 Avx.Store(rowPtr + x, result);
             }
         }
+
+        return setLastV;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static unsafe void DrawSpritesSse2(Chip8 chip8, int x, int y, int n)
+    private static unsafe bool DrawSpritesSse2(Chip8 chip8, int x, int y, int n)
     {
+        var setLastV = false;
+
         fixed (uint* gfxPtr = chip8.Gfx)
         fixed (byte* memPtr = chip8.Memory)
         {
@@ -157,8 +163,7 @@ public static class Draw
                     var right = Sse2.CompareEqual(pixels.AsInt32(), Vector128<int>.Zero);
                     var collision = Sse2.AndNot(left, right);
 
-                    if (!Sse41.TestZ(collision.AsInt32(), collision.AsInt32()))
-                        chip8.V[15] = 1;
+                    setLastV |= !Sse41.TestZ(collision.AsInt32(), collision.AsInt32());
 
                     var result = Sse2.Xor(existing.AsInt32(), pixels.AsInt32()).AsUInt32();
                     Sse2.Store(rowPtr + currentX, result);
@@ -172,12 +177,12 @@ public static class Draw
                     if (pixel == 0)
                         continue;
 
-                    if (rowPtr[currentX] != 0)
-                        chip8.V[^1] = 1;
-
+                    setLastV |= rowPtr[currentX] > 0U;
                     rowPtr[currentX] ^= 0xffffffff;
                 }
             }
         }
+
+        return setLastV;
     }
 }
