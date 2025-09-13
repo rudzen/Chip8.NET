@@ -1,25 +1,6 @@
-﻿using System.Diagnostics;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 
 namespace Chip8.App;
-
-public sealed class Chip8
-{
-    public readonly byte[] Memory = new byte[4096];
-    public readonly byte[] V = new byte[16];
-    public readonly uint[] Gfx = new uint[64 * 32];
-    public readonly ushort[] Stack = new ushort[16];
-    public byte Sp;
-    public ushort Pc;
-    public ushort I;
-    public byte DelayTimer;
-    public byte SoundTimer; // sound
-    public ushort Keyboard;
-
-    public bool WaitingForKeyPress;
-
-    public readonly Stopwatch Watch = new();
-}
 
 public static class Cpu
 {

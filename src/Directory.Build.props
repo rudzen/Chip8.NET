@@ -27,7 +27,7 @@
         <!-- don't force primary ctor since it changes semantics -->
         <NoWarn>$(NoWarn);IDE0290</NoWarn>
 
-        <NoWarn>$(NoWarn);CA1051;CA1305;CA2022</NoWarn>
+        <NoWarn>$(NoWarn);CA1051;CA1305;CA2022;CA2211</NoWarn>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)' == 'Release'">

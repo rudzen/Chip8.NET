@@ -6,6 +6,7 @@ namespace Chip8.App;
 
 public static class Draw
 {
+    [Obsolete("Use DrawSprites instead.")]
     public static void DrawSpriteNaive(Chip8 chip8, int x, int y, int n)
     {
         chip8.V[^1] = 0;
@@ -30,6 +31,7 @@ public static class Draw
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void DrawSprites(Chip8 chip8, int x, int y, int n)
     {
         // clear last buba
@@ -40,11 +42,11 @@ public static class Draw
         else if (Sse2.IsSupported && x <= 60)
             DrawSpritesSse2(chip8, x, y, n);
         else
-            DrawSpritesFast(chip8, x, y, n);
+            DrawSpritesInternal(chip8, x, y, n);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void DrawSpritesFast(Chip8 chip8, int x, int y, int n)
+    private static void DrawSpritesInternal(Chip8 chip8, int x, int y, int n)
     {
         var gfx = chip8.Gfx.AsSpan();
         var memory = chip8.Memory.AsSpan();
