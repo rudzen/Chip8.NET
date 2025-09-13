@@ -1,0 +1,38 @@
+<Project>
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <LangVersion>13</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <Copyright>(C) 2025</Copyright>
+        <Authors>Rudy Alex Kohn</Authors>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <CentralPackageVersionOverrideEnabled>true</CentralPackageVersionOverrideEnabled>
+    </PropertyGroup>
+
+    <PropertyGroup Label="Configure Warnings">
+        <WarningLevel>5</WarningLevel>
+        <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+        <CodeAnalysisTreatWarningsAsErrors>true</CodeAnalysisTreatWarningsAsErrors>
+        <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+        <AnalysisMode>Recommended</AnalysisMode> <!-- Enable recommended CAxxx code quality rules -->
+    </PropertyGroup>
+
+    <PropertyGroup Label="Disabled Warnings">
+        <!-- disable some common idiotic sonar cube stuff-->
+        <NoWarn>$(NoWarn);S103;S109;S1200;S2219;S3925</NoWarn>
+
+        <!-- don't force primary ctor since it changes semantics -->
+        <NoWarn>$(NoWarn);IDE0290</NoWarn>
+
+        <NoWarn>$(NoWarn);CA1051;CA1305;CA2022</NoWarn>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+        <DebugSymbols>false</DebugSymbols>
+        <DebugType>None</DebugType>
+    </PropertyGroup>
+
+</Project>
