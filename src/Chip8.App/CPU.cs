@@ -198,15 +198,11 @@ public static class Cpu
                         chip8.Memory[chip8.I + 1] = (byte)((chip8.V[tx] % 100) / 10);
                         chip8.Memory[chip8.I + 2] = (byte)(chip8.V[tx] % 10);
                         break;
-                    case 0x55:
-                        for (var i = 0; i <= tx; i++)
-                            chip8.Memory[chip8.I + i] = chip8.V[i];
-
+                    case 0x55: // store registers V0 through Vx in memory starting at location I
+                        chip8.V.AsSpan(0, tx + 1).CopyTo(chip8.Memory.AsSpan(chip8.I, tx + 1));
                         break;
-                    case 0x65:
-                        for (var i = 0; i <= tx; i++)
-                            chip8.V[i] = chip8.Memory[chip8.I + i];
-
+                    case 0x65: // read registers V0 through Vx from memory starting at location I
+                        chip8.Memory.AsSpan(chip8.I, tx + 1).CopyTo(chip8.V.AsSpan(0, tx + 1));
                         break;
                     default:
                         throw new Chip8Exception($"Unsupported opcode {opcode:X4}");
