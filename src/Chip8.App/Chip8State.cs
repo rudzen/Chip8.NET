@@ -44,6 +44,8 @@ public static class StateErrorExtensions
 
 public sealed class Chip8State
 {
+    static Chip8State() => State = new();
+
     public Sdl Sdl = null!;
     public unsafe Window* Window;
     public unsafe Renderer* Renderer;
@@ -53,9 +55,9 @@ public sealed class Chip8State
     public string RomName = null!;
     public StateError Error;
 
-    public readonly Chip8 Chip8 = new();
+    public Chip8 Chip8 = new();
 
-    public static Chip8State State => new();
+    public static Chip8State State { get; }
 }
 
 public static class State
