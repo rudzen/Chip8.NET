@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Chip8.App;
 using Silk.NET.SDL;
@@ -114,6 +115,7 @@ quit:
     state.Sdl.Dispose();
 }
 
+[MethodImpl(MethodImplOptions.AggressiveInlining)]
 static int KeyCodeToKey(int keycode)
 {
     var keyIndex = keycode < 58
