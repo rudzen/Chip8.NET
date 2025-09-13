@@ -6,20 +6,18 @@ namespace Chip8.App;
 
 public sealed class Chip8
 {
-    public readonly byte[] Memory = new byte[4096];
-    public readonly byte[] V = new byte[16];
-    public readonly uint[] Gfx = new uint[64 * 32];
-    public readonly ushort[] Stack = new ushort[16];
-    public byte Sp;
-    public ushort Pc;
-    public ushort I;
-    public byte DelayTimer;
-    public byte SoundTimer; // sound
-    public ushort Keyboard;
-
-    public bool WaitingForKeyPress;
-
-    public readonly Stopwatch Watch = new();
+    public readonly byte[] Memory = new byte[4096];  // 4K memory
+    public readonly byte[] V = new byte[16];         // registers V0 to VF
+    public readonly uint[] Gfx = new uint[64 * 32];  // graphics (64x32 pixels)
+    public readonly ushort[] Stack = new ushort[16]; // call stack
+    public byte Sp;                              // stack pointer
+    public ushort Pc;                            // program counter
+    public ushort I;                             // index
+    public byte DelayTimer;                      // delay
+    public byte SoundTimer;                      // sound
+    public ushort Keyboard;                      // hex keyboard state
+    public bool WaitingForKeyPress;          // true if waiting for a key press to store in Vx
+    public readonly Stopwatch Watch = new();         // timer for 60Hz updates
 }
 
 [Flags]
@@ -55,7 +53,7 @@ public sealed class Chip8State
     public string RomName = null!;
     public StateError Error;
 
-    public Chip8 Chip8 = new();
+    public readonly Chip8 Chip8 = new();
 
     public static Chip8State State { get; }
 }
