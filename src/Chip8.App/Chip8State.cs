@@ -60,6 +60,8 @@ public sealed class Chip8State
 
 public static class State
 {
+    private static ReadOnlySpan<byte> DefaultWindowTitle => "Chip-8 Interpreter"u8;
+
     public static unsafe Chip8State InitState(string[] args)
     {
         var state = Chip8State.State;
@@ -80,7 +82,7 @@ public static class State
         const uint windowFlags = 0;
 
         state.Window = state.Sdl.CreateWindow(
-            title: "Chip-8 Interpreter",
+            title: DefaultWindowTitle,
             x: windowX,
             y: windowY,
             w: windowWidth,
