@@ -6,31 +6,18 @@ namespace Chip8.App;
 
 public static class Draw
 {
-    [Obsolete("Use DrawSprites instead.")]
-    public static void DrawSpriteNaive(Chip8 chip8, int x, int y, int n)
-    {
-        chip8.V[^1] = 0;
-
-        for (var byteIndex = 0; byteIndex < n; byteIndex++)
-        {
-            var mem = chip8.Memory[chip8.I + byteIndex];
-
-            for (var bitIndex = 0; bitIndex < 8; bitIndex++)
-            {
-                var index = x + bitIndex + (y + byteIndex) * 64;
-                if (index > 2047)
-                    break;
-
-                var pixel = (byte)((mem >> (7 - bitIndex)) & 0x01);
-
-                if (pixel == 1 && chip8.Gfx[index] != 0)
-                    chip8.V[^1] = 1;
-
-                chip8.Gfx[index] = (chip8.Gfx[index] != 0 && pixel == 0) || (chip8.Gfx[index] == 0 && pixel == 1) ? 0xffffffff : 0;
-            }
-        }
-    }
-
+    /// <summary>
+    /// Modifies the chip8.Gfx array to draw n bytes starting at memory location chip8.I at position (x, y).
+    /// Each byte is 8 pixels wide, and n can be at most 15.
+    /// If any pixels are erased (changed from set to unset), the VF register (chip8.V[0xF]) is set to 1, otherwise it is set to 0.
+    /// The drawing wraps around the screen if it exceeds the boundaries.
+    /// Uses SIMD instructions (AVX2 or SSE2) if available for performance optimization.
+    /// </summary>
+    /// <param name="chip8">The current Chip8 state</param>
+    /// <param name="x">X</param>
+    /// <param name="y">Y</param>
+    /// <param name="n">N</param>
+    /// <returns>true if collision was detected, otherwise false</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool DrawSprites(Chip8 chip8, int x, int y, int n)
     {
@@ -46,7 +33,7 @@ public static class Draw
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool DrawSpritesInternal(Chip8 chip8, int x, int y, int n)
     {
-        var setLastV = false;
+        var applyCollisionFlag = false;
         var gfx = chip8.Gfx.AsSpan();
         var memory = chip8.Memory.AsSpan();
 
@@ -68,18 +55,18 @@ public static class Draw
                 if (pixel == 0)
                     continue;
 
-                setLastV |= gfx[index] > 0U;
+                applyCollisionFlag |= gfx[index] > 0U;
                 gfx[index] ^= 0xffffffff;
             }
         }
 
-        return setLastV;
+        return applyCollisionFlag;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static unsafe bool DrawSpritesAvx2(Chip8 chip8, int x, int y, int n)
     {
-        var setLastV = false;
+        var applyCollisionFlag = false;
 
         fixed (uint* gfxPtr = chip8.Gfx)
         fixed (byte* memPtr = chip8.Memory)
@@ -114,20 +101,20 @@ public static class Draw
                 var right = Avx2.CompareEqual(pixels, Vector256<uint>.Zero);
                 var collision = Avx2.AndNot(left, right);
 
-                setLastV |= !Avx.TestZ(collision, collision);
+                applyCollisionFlag |= !Avx.TestZ(collision, collision);
 
                 var result = Avx2.Xor(existing, pixels);
                 Avx.Store(rowPtr + x, result);
             }
         }
 
-        return setLastV;
+        return applyCollisionFlag;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static unsafe bool DrawSpritesSse2(Chip8 chip8, int x, int y, int n)
     {
-        var setLastV = false;
+        var applyCollisionFlag = false;
 
         fixed (uint* gfxPtr = chip8.Gfx)
         fixed (byte* memPtr = chip8.Memory)
@@ -163,7 +150,7 @@ public static class Draw
                     var right = Sse2.CompareEqual(pixels.AsInt32(), Vector128<int>.Zero);
                     var collision = Sse2.AndNot(left, right);
 
-                    setLastV |= !Sse41.TestZ(collision.AsInt32(), collision.AsInt32());
+                    applyCollisionFlag |= !Sse41.TestZ(collision.AsInt32(), collision.AsInt32());
 
                     var result = Sse2.Xor(existing.AsInt32(), pixels.AsInt32()).AsUInt32();
                     Sse2.Store(rowPtr + currentX, result);
@@ -177,12 +164,12 @@ public static class Draw
                     if (pixel == 0)
                         continue;
 
-                    setLastV |= rowPtr[currentX] > 0U;
+                    applyCollisionFlag |= rowPtr[currentX] > 0U;
                     rowPtr[currentX] ^= 0xffffffff;
                 }
             }
         }
 
-        return setLastV;
+        return applyCollisionFlag;
     }
 }
