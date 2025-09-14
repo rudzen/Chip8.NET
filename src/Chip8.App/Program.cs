@@ -32,12 +32,15 @@ return;
 static unsafe void MainLoop(Chip8State state)
 {
     Texture* sdlTexture = null;
-    var frameTimer = Stopwatch.StartNew();
+    Surface* sdlSurface = null;
+
     var ticksPer60Hz = (int)(Stopwatch.Frequency * 0.016);
 
     const uint quit = (uint)EventType.Quit;
     const uint keyDown = (uint)EventType.Keydown;
     const uint keyUp = (uint)EventType.Keyup;
+
+    var frameTimer = Stopwatch.StartNew();
 
     while (true)
     {
@@ -57,6 +60,9 @@ static unsafe void MainLoop(Chip8State state)
                             goto quit;
                         case keyDown:
                         {
+                            if (sdlEvent.Key.Keysym.Sym == (int)KeyCode.KEscape)
+                                goto quit;
+
                             var key = KeyCodeToKey(sdlEvent.Key.Keysym.Sym);
                             state.Chip8.Keyboard |= (ushort)(1 << key);
 
@@ -73,26 +79,27 @@ static unsafe void MainLoop(Chip8State state)
                     }
                 }
 
-                var displayHandle = GCHandle.Alloc(state.Chip8.Gfx, GCHandleType.Pinned);
-
                 if (sdlTexture is not null)
                     state.Sdl.DestroyTexture(sdlTexture);
 
-                var sdlSurface = state.Sdl.CreateRGBSurfaceFrom(
-                    pixels: displayHandle.AddrOfPinnedObject().ToPointer(),
-                    width: 64,
-                    height: 32,
-                    depth: 32,
-                    pitch: 64 * 4,
-                    Rmask: 0x000000ff,
-                    Gmask: 0x0000ff00,
-                    Bmask: 0x00ff0000,
-                    Amask: 0xff000000
-                );
+                var gfx = MemoryMarshal.AsBytes(state.Chip8.Gfx.AsSpan());
+
+                if (sdlSurface is null)
+                    sdlSurface = state.Sdl.CreateRGBSurfaceFrom(
+                        pixels: gfx,
+                        width: 64,
+                        height: 32,
+                        depth: 32,
+                        pitch: 64 * 4,
+                        Rmask: 0x000000ff,
+                        Gmask: 0x0000ff00,
+                        Bmask: 0x00ff0000,
+                        Amask: 0xff000000
+                    );
+                else
+                    sdlSurface->Pixels = Unsafe.AsPointer(ref MemoryMarshal.GetReference(gfx));
 
                 sdlTexture = state.Sdl.CreateTextureFromSurface(state.Renderer, sdlSurface);
-
-                displayHandle.Free();
 
                 state.Sdl.RenderClear(state.Renderer);
                 state.Sdl.RenderCopy(state.Renderer, sdlTexture, null, null);
