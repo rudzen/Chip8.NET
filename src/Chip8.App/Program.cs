@@ -32,7 +32,25 @@ return;
 static unsafe void MainLoop(Chip8State state)
 {
     Texture* sdlTexture = null;
-    Surface* sdlSurface = null;
+
+    const uint rMask = 0x000000ff;
+    const uint gMask = 0x0000ff00;
+    const uint bMask = 0x00ff0000;
+    const uint aMask = 0xff000000;
+    const int depth = 32;
+    const int pitch = 64 * 4;
+
+    var sdlSurface = state.Sdl.CreateRGBSurfaceFrom(
+        pixels: Span<byte>.Empty,
+        width: Chip8.App.Chip8.Width,
+        height: Chip8.App.Chip8.Height,
+        depth: depth,
+        pitch: pitch,
+        Rmask: rMask,
+        Gmask: gMask,
+        Bmask: bMask,
+        Amask: aMask
+    );
 
     var ticksPer60Hz = (int)(Stopwatch.Frequency * 0.016);
 
@@ -83,22 +101,7 @@ static unsafe void MainLoop(Chip8State state)
                     state.Sdl.DestroyTexture(sdlTexture);
 
                 var gfx = MemoryMarshal.AsBytes(state.Chip8.Gfx.AsSpan());
-
-                if (sdlSurface is null)
-                    sdlSurface = state.Sdl.CreateRGBSurfaceFrom(
-                        pixels: gfx,
-                        width: 64,
-                        height: 32,
-                        depth: 32,
-                        pitch: 64 * 4,
-                        Rmask: 0x000000ff,
-                        Gmask: 0x0000ff00,
-                        Bmask: 0x00ff0000,
-                        Amask: 0xff000000
-                    );
-                else
-                    sdlSurface->Pixels = Unsafe.AsPointer(ref MemoryMarshal.GetReference(gfx));
-
+                sdlSurface->Pixels = Unsafe.AsPointer(ref MemoryMarshal.GetReference(gfx));
                 sdlTexture = state.Sdl.CreateTextureFromSurface(state.Renderer, sdlSurface);
 
                 state.Sdl.RenderClear(state.Renderer);
