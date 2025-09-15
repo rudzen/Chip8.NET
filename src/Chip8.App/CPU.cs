@@ -11,10 +11,10 @@ public static class Cpu
     {
         const int programStart = 512;
         var ram = chip8.Memory.AsSpan();
-        FontCharacters.CopyTo(ram);
-        ram.Slice(FontCharacters.Length, programStart).Clear();
+        Font.FontCharacters.CopyTo(ram);
+        ram.Slice(Font.FontCharacters.Length, programStart).Clear();
         program.CopyTo(ram.Slice(programStart, program.Length));
-        var usedRam = programStart + program.Length + FontCharacters.Length;
+        var usedRam = programStart + program.Length + Font.FontCharacters.Length;
         ram[usedRam..].Clear();
         chip8.Pc = programStart;
         chip8.Sp = 0;
