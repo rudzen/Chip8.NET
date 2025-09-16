@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Chip8.App;
+using Chip8.App.Extensions;
 using Silk.NET.SDL;
 using SystemThread = System.Threading.Thread;
 
@@ -57,6 +58,7 @@ static unsafe void MainLoop(Chip8State state)
     const uint quit = (uint)EventType.Quit;
     const uint keyDown = (uint)EventType.Keydown;
     const uint keyUp = (uint)EventType.Keyup;
+    const uint dropFile = (uint)EventType.Dropfile;
 
     var frameTimer = Stopwatch.StartNew();
 
@@ -92,6 +94,29 @@ static unsafe void MainLoop(Chip8State state)
                         {
                             var key = KeyCodeToKey(sdlEvent.Key.Keysym.Sym);
                             state.Chip8.Keyboard &= (ushort)~(1 << key);
+                            break;
+                        }
+                        case dropFile:
+                        {
+                            var filePath = sdlEvent.Drop.AsString(state.Sdl);
+
+                            if (string.IsNullOrEmpty(filePath))
+                            {
+                                Console.WriteLine("Failed to read dropped file path.");
+                                break;
+                            }
+
+                            Console.WriteLine($"Attempting to load ROM file: '{filePath}'");
+
+                            State.LoadFile(state, filePath);
+
+                            if (state.Error != StateError.None)
+                            {
+                                Console.WriteLine($"Failed to read ROM file '{filePath}'.");
+                                state.Error = StateError.None;
+                            }
+                            else
+                                Console.WriteLine($"Successfully loaded ROM file '{filePath}'.");
                             break;
                         }
                     }

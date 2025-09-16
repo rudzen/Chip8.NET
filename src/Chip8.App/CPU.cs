@@ -1,23 +1,39 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace Chip8.App;
 
 public static class Cpu
 {
-
     private static readonly Random Generator = new(Environment.TickCount);
 
-    public static void LoadProgram(Chip8 chip8, ReadOnlySpan<byte> program)
+    public static void InitMemory(Chip8 chip8)
     {
-        const int programStart = 512;
+        var start = Stopwatch.GetTimestamp();
         var ram = chip8.Memory.AsSpan();
         Font.FontCharacters.CopyTo(ram);
-        ram.Slice(Font.FontCharacters.Length, programStart).Clear();
-        program.CopyTo(ram.Slice(programStart, program.Length));
-        var usedRam = programStart + program.Length + Font.FontCharacters.Length;
-        ram[usedRam..].Clear();
-        chip8.Pc = programStart;
+        ram[Font.FontCharacters.Length..].Clear();
+        chip8.Pc = Chip8.ProgramStart;
         chip8.Sp = 0;
+        var end = Stopwatch.GetTimestamp();
+        Console.WriteLine($"Initialized memory in {Stopwatch.GetElapsedTime(start, end)}");
+    }
+
+    public static void InitProgram(Chip8 chip8, int programSize)
+    {
+        var ram = chip8.Memory.AsSpan(Chip8.ProgramStart + programSize);
+        ram.Clear();
+        chip8.Pc = Chip8.ProgramStart;
+        chip8.Sp = 0;
+        chip8.Gfx.AsSpan().Clear();
+        chip8.V.AsSpan().Clear();
+        chip8.Stack.AsSpan().Clear();
+        chip8.I = 0;
+        chip8.DelayTimer = 0;
+        chip8.SoundTimer = 0;
+        chip8.Keyboard = 0;
+        chip8.WaitingForKeyPress = false;
+        chip8.Watch.Reset();
     }
 
     public static void KeyPressed(Chip8 chip8, byte key)
@@ -29,6 +45,7 @@ public static class Cpu
         chip8.Pc += 2;
     }
 
+    [SkipLocalsInit]
     public static void Step(Chip8 chip8, int ticksPer60Hz)
     {
         if (!chip8.Watch.IsRunning) chip8.Watch.Start();
