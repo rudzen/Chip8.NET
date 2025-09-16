@@ -8,9 +8,12 @@ public sealed class Chip8
 {
     public const int Width = 64;
     public const int Height = 32;
+    public const int MemorySize = 0x1000;
     private const int Registers = 16;
-    private const int MemorySize = 0x1000;
     private const int StackSize = 16;
+
+    // location in memory where programs start
+    public const int ProgramStart = 0x200;
 
     public readonly byte[] Memory = new byte[MemorySize];   // 4K memory
     public readonly byte[] V = new byte[Registers];         // registers V0 to VF
@@ -102,6 +105,8 @@ public static class State
             return state;
         }
 
+        state.Sdl.SetWindowResizable(state.Window, SdlBool.True);
+
         const int rendererIndex = -1;
         const uint rendererFlags = (uint)RendererFlags.Accelerated;
 
@@ -113,6 +118,8 @@ public static class State
             return state;
         }
 
+        Cpu.InitMemory(state.Chip8);
+
         LoadFile(state, args);
 
         state.Sdl.SetWindowTitle(state.Window, Path.GetFileName(state.RomName));
@@ -120,6 +127,30 @@ public static class State
         InitAudio(state);
 
         return state;
+    }
+
+    public static void LoadFile(Chip8State state, string file)
+    {
+        using (var fs = File.Open(file, FileMode.Open, FileAccess.Read, FileShare.Read))
+        {
+            if (fs.Length > Chip8.MemorySize - Chip8.ProgramStart)
+            {
+                state.Error |= StateError.FileLoad;
+                return;
+            }
+
+            var read = fs.Read(state.Chip8.Memory.AsSpan(Chip8.ProgramStart));
+
+            if (read != fs.Length)
+            {
+                state.Error |= StateError.FileLoad;
+                return;
+            }
+
+            Cpu.InitProgram(state.Chip8, read);
+        }
+
+        state.RomName = file;
     }
 
     private static void LoadFile(Chip8State state, ReadOnlySpan<string> args)
@@ -134,19 +165,7 @@ public static class State
             return;
         }
 
-        using var fs = File.Open(file, FileMode.Open, FileAccess.Read, FileShare.Read);
-
-        Span<byte> data = stackalloc byte[(int)fs.Length];
-        var read = fs.Read(data);
-
-        if (read != fs.Length)
-        {
-            state.Error |= StateError.FileLoad;
-            return;
-        }
-
-        Cpu.LoadProgram(state.Chip8, data);
-        state.RomName = file;
+        LoadFile(state, file);
     }
 
     private static unsafe void InitAudio(Chip8State state)
